@@ -501,6 +501,8 @@ app.addHook("onRequest", (req, reply, done) => {
   // 所以 ALLOW_PUBLIC_API=true 后必须先验 /v1 的网关 key，避免被云平台内网 IP 绕过。
   if (readBooleanEnv("ALLOW_PUBLIC_API", false) && req.url.startsWith("/v1/")) {
     const configuredKey = readEnvValue("GATEWAY_API_KEY");
+    console.log("Authorization:", req.headers.authorization);
+    console.log("Configured Key:", configuredKey);
     if (!configuredKey) {
       reply.code(401).send({ error: "公网 /v1 已开启，但 GATEWAY_API_KEY 未配置" });
       return;
