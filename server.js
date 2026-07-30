@@ -3,6 +3,11 @@ require("dotenv").config();
 const Fastify = require("fastify");
 const fs = require("fs-extra");
 const path = require("path");
+const {
+  formatDateTimeInTimeZone,
+  resolveTimeZone,
+  zonedWallTimeToDate
+} = require("./time_utils");
 
 const DEFAULT_BODY_LIMIT_MB = 50;
 
@@ -21,6 +26,12 @@ app.register(require("@fastify/formbody"));
 
 const PORT = Number(process.env.PORT) || 3000;
 const TARGET_API_URL = process.env.TARGET_API_URL;
+const TIME_ZONE = resolveTimeZone();
+const IS_RAILWAY_RUNTIME = Boolean(
+  process.env.RAILWAY_ENVIRONMENT ||
+  process.env.RAILWAY_PROJECT_ID ||
+  process.env.RAILWAY_SERVICE_ID
+);
 const TIMELINE_FILE = "enhanced_messages.json";
 const TIMESTAMP_DB_FILE = "./message_timestamps.json";
 // 批注 2026-07-17：管理页保存 .env 后要让 PM2 刷新进程环境；保留原进程名，
@@ -213,9 +224,9 @@ function parseTimestampLabel(value) {
   const match = text.match(/（?\s*(\d{4})([-/])(\d{1,2})\2(\d{1,2})(?:[ T]?)(\d{1,2})[:：](\d{2})/);
   if (!match) return null;
   const [, yyyy, , month, day, hour, minute] = match;
-  const normalized = `${yyyy}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")} ${String(hour).padStart(2, "0")}:${minute}`;
-  const parsed = new Date(normalized);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
+  // 批注 2026-07-30：Kelivo 写进消息前缀的是用户配置时区的墙上时间；
+  // 公网/Railway 不能按服务器 UTC 解析，否则时间线和自动唤醒都会被推迟。
+  return zonedWallTimeToDate({ year: yyyy, month, day, hour, minute }, TIME_ZONE);
 }
 
 function stripLeadingTimestamp(content) {
@@ -516,6 +527,13 @@ app.addHook("onRequest", (req, reply, done) => {
     const bearer = auth.match(/^Bearer\s+(.+)$/i)?.[1]?.trim() || "";
     const headerKey = String(req.headers["x-gateway-api-key"] || req.headers["x-api-key"] || "").trim();
     if (bearer === configuredKey || headerKey === configuredKey) return done();
+    // 批注 2026-07-30：Kelivo 可能在模型探测或旧预设里继续带错 key；
+    // 只记路径和 header 类型，帮助排查缓存/重复请求，绝不把任意密钥写入日志。
+    console.warn(JSON.stringify({
+      event: "gateway_auth_rejected",
+      path: req.url.split("?")[0],
+      auth_source: bearer ? "bearer" : headerKey ? "x-api-key" : "missing"
+    }));
     reply.code(401).send({ error: "Gateway API Key 无效或缺失" });
     return;
   }
@@ -745,6 +763,9 @@ app.post("/internal/wake-event", async (req, reply) => {
 // 读取 .env 值
 // ========================
 function readEnvValue(key) {
+  // 批注 2026-07-30：Railway Variables 是云端部署的权威配置源；
+  // 容器内 .env 只作兜底，避免管理页保存出的临时文件覆盖平台变量。
+  if (IS_RAILWAY_RUNTIME && process.env[key]) return process.env[key];
   try {
     const envContent = fs.readFileSync(ENV_FILE, "utf-8");
     const lines = envContent.split("\n");
@@ -837,7 +858,7 @@ function basicAuth(req, reply, done) {
 app.get("/admin", { preHandler: basicAuth }, async (req, reply) => {
   const serverUptime = Math.floor(process.uptime());
   const wakeUpStatus = wakeUpLastHeartbeat
-    ? `在线（上次心跳: ${new Date(wakeUpLastHeartbeat).toLocaleString("zh-CN")}）`
+    ? `在线（上次心跳: ${formatDateTimeInTimeZone(new Date(wakeUpLastHeartbeat), TIME_ZONE)}）`
     : "离线或未启动";
 
   const currentUrl = readEnvValue("TARGET_API_URL");
@@ -865,7 +886,7 @@ app.get("/admin", { preHandler: basicAuth }, async (req, reply) => {
       <details class="diary-entry">
         <summary>
           <span>${escapeHtml(entry.name)}</span>
-          <em>${escapeHtml(new Date(entry.updated_at).toLocaleString("zh-CN"))}</em>
+          <em>${escapeHtml(formatDateTimeInTimeZone(new Date(entry.updated_at), TIME_ZONE))}</em>
         </summary>
         <pre>${escapeHtml(entry.content)}</pre>
       </details>
@@ -873,6 +894,9 @@ app.get("/admin", { preHandler: basicAuth }, async (req, reply) => {
     : `<div class="diary-empty">还没有日记。模型在 wake-up 回复里输出 [DIARY]...[/DIARY] 后会保存到这里。</div>`;
 
   const authToken = Buffer.from(`${process.env.ADMIN_USER}:${process.env.ADMIN_PASSWORD}`).toString("base64");
+  const runtimeConfigNotice = IS_RAILWAY_RUNTIME
+    ? `<div class="hint">Railway 检测到：此页面保存的是当前容器的 .env。Railway Variables 会优先提供运行时配置，且未挂载 Volume 的文件会在重新部署后丢失；请在 Railway Variables 修改唤醒数值并重新部署。</div>`
+    : "";
 
   const presets = loadPresets();
   const presetsJson = safeJsonForInlineScript(presets);
@@ -1334,6 +1358,7 @@ const html = `<!DOCTYPE html>
       <p>Gateway <strong>运行中 (${serverUptime}秒)</strong></p>
       <p>Auto Wakeup <strong>${wakeUpStatus}</strong></p>
     </div>
+    ${runtimeConfigNotice}
 
     <div class="diary-box">
       <h3>Wake Diary</h3>
@@ -1403,15 +1428,15 @@ const html = `<!DOCTYPE html>
           <option value="true" ${weatherConfig.enabled === "true" ? "selected" : ""}>开启</option>
         </select>
         <label>位置名称</label>
-        <input name="weather_location_name" id="f_weather_location_name" value="${escapeHtml(weatherConfig.locationName)}" placeholder="例如：London">
+        <input name="weather_location_name" id="f_weather_location_name" value="${escapeHtml(weatherConfig.locationName)}" placeholder="例如：Beijing">
         <div class="grid-2">
           <div>
             <label>纬度 Latitude</label>
-            <input name="weather_lat" id="f_weather_lat" value="${escapeHtml(weatherConfig.lat)}" placeholder="例如：51.5072">
+            <input name="weather_lat" id="f_weather_lat" value="${escapeHtml(weatherConfig.lat)}" placeholder="例如：39.9042">
           </div>
           <div>
             <label>经度 Longitude</label>
-            <input name="weather_lon" id="f_weather_lon" value="${escapeHtml(weatherConfig.lon)}" placeholder="例如：-0.1276">
+            <input name="weather_lon" id="f_weather_lon" value="${escapeHtml(weatherConfig.lon)}" placeholder="例如：116.4074">
           </div>
         </div>
         <label>单位</label>
@@ -1712,9 +1737,7 @@ app.post("/admin/restart", { preHandler: basicAuth }, async (req, reply) => {
 // 测试 Bark
 // ========================
 app.get("/test-bark", async (req, reply) => {
-  const now = new Date();
-  const pad = n => String(n).padStart(2, '0');
-  const formattedTime = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  const formattedTime = formatDateTimeInTimeZone(new Date(), TIME_ZONE);
   appendSpecialEvent(`（${formattedTime} 刚刚给用户发了 Bark：这是一条测试推送。）`);
   reply.send({ success: true });
 });

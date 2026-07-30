@@ -123,6 +123,12 @@ node wake_up.js
 
 ---
 
+## 📋 更新日志（2026-07-30）
+
+- 🕗 默认时区改为 `Asia/Shanghai`。Kelivo 消息里的时间前缀会按 `TIME_ZONE` 解析，不再受 Railway / Render 服务器 UTC 时区影响，避免出现“用户在未来发言”而无法自动唤醒。
+- ☁️ 明确 Railway 配置方式：Railway Variables 是云端部署的配置来源；管理页写入的是容器内 `.env`，不能替代 Railway Variables。
+- 🔐 公网鉴权失败日志只记录请求路径和鉴权来源，不记录任何 API Key，方便排查 Kelivo 遗留的旧配置或重复探测请求。
+
 ## 📋 更新日志（2026-07-17）
 
 - 📳 修复 ntfy 默认优先级兼容：`NTFY_PRIORITY=default` 或留空时不再发送 `priority` 字段，避免部分兼容服务返回 `invalid request: request body must be valid JSON`；数字 `1`–`5` 会按 JSON 数字发送。
@@ -234,13 +240,13 @@ NIGHT_CHECK_INTERVAL_MINUTES=120
 WAKE_DAY_START_HOUR=10
 WAKE_DAY_END_HOUR=24
 WEATHER_ENABLED=false
-WEATHER_LOCATION_NAME=London
+WEATHER_LOCATION_NAME=Beijing
 WEATHER_LAT=
 WEATHER_LON=
 WEATHER_UNITS=metric
 PORT=3000
 GATEWAY_BASE_URL=http://localhost:3000
-TIME_ZONE=Europe/London
+TIME_ZONE=Asia/Shanghai
 RESTART_COMMAND=pm2 restart gateway wake-up --update-env
 ADMIN_USER=admin
 ADMIN_PASSWORD=你的强密码
@@ -254,12 +260,14 @@ ADMIN_PASSWORD=你的强密码
 
 ### 时区配置
 
-`.env` 中的 `TIME_ZONE` 默认设置为 `Europe/London`（适用于英国用户）。
+`.env` 中的 `TIME_ZONE` 默认设置为 `Asia/Shanghai`（北京时间）。
+
+Kelivo 写入消息前缀的时间会按这个时区解释；即使 Railway / Render 服务器本身运行在 UTC，自动唤醒的“距离上次回复多久”、白天/夜间策略和时间线事件也会继续按 `TIME_ZONE` 计算。
 
 如果你在其他地区，请修改 `.env`：
 
 ```env
-TIME_ZONE=Asia/Shanghai
+TIME_ZONE=Europe/London
 # 或：
 TIME_ZONE=America/New_York
 TIME_ZONE=Asia/Tokyo
@@ -310,6 +318,15 @@ http://你的电脑局域网IP:3000/v1/chat/completions
 RESTART_COMMAND=pm2 restart 你的gateway进程名 你的wake进程名 --update-env
 ```
 
+### Railway 配置说明
+
+Railway 使用环境变量（**Variables**）注入运行时配置，且没有挂载 Volume 时，容器内文件会在重新部署后消失。因此在 Railway 部署时：
+
+1. 请在 Railway 的 **Variables** 页面修改 `DAY_WAKE_AFTER_MINUTES`、`NIGHT_WAKE_AFTER_MINUTES`、检查间隔、`TIME_ZONE` 等配置。
+2. 修改后执行 Railway 的 Redeploy / Restart，让 `gateway` 与 `wake_up` 进程重新读取环境变量。
+3. `/admin` 的“保存配置”会写入当前容器的 `.env`；它适合本机、VPS 或已自行配置持久化磁盘的部署，**不应作为 Railway Variables 的替代品**。
+4. `/admin` 的默认“一键重启”执行的是 pm2 命令；Railway 没有自行安装 pm2 时，请在 Railway 控制台重新部署，而不是依赖该按钮。
+
 安全提示：
 
 - 如果用 `http://你的IP:3000/admin` 打开管理页，浏览器可能会提示“即将提交的信息不安全”。这是因为 API Key、推送 Key 等敏感配置正在通过 HTTP 明文传输。
@@ -325,7 +342,7 @@ RESTART_COMMAND=pm2 restart 你的gateway进程名 你的wake进程名 --update-
 - 检查频率默认：白天每 10 分钟，夜间每 2 小时
 - 若用户一直未回复，后续会继续唤醒
 
-这些数值现在可以在 `/admin` 管理页的 **Wake Settings** 区域直接填写，保存后写入 `.env`，重启 `gateway` 和 `wake-up` 后生效。
+这些数值在本机/VPS + pm2 部署时，可以在 `/admin` 管理页的 **Wake Settings** 区域填写，保存后重启 `gateway` 和 `wake-up` 生效。Railway / Render 等云端部署请改平台的环境变量，再重新部署。
 
 对应环境变量：
 
@@ -358,9 +375,9 @@ WEATHER_ENABLED=false
 
 ```env
 WEATHER_ENABLED=true
-WEATHER_LOCATION_NAME=London
-WEATHER_LAT=51.5072
-WEATHER_LON=-0.1276
+WEATHER_LOCATION_NAME=Beijing
+WEATHER_LAT=39.9042
+WEATHER_LON=116.4074
 WEATHER_UNITS=metric
 ```
 
@@ -371,7 +388,7 @@ WEATHER_UNITS=metric
 3. 复制该地点的纬度和经度，填入 `WEATHER_LAT` 和 `WEATHER_LON`。
 4. `WEATHER_LOCATION_NAME` 只是给模型看的名称，可以写城市名、学校名、家附近区域名。
 
-如果不想暴露精确位置，可以只填城市中心点坐标。例如人在伦敦，可以填 London 的公共坐标，而不是住址坐标。
+如果不想暴露精确位置，可以只填城市中心点坐标。例如人在北京，可以填 Beijing 的公共坐标，而不是住址坐标。
 
 天气信息会注入到唤醒 prompt 中，内容包括：天气概况、温度、体感温度、湿度、降雨、风速、日出日落。自定义 `wake_prompt.txt` 时，可以使用 `${weatherContext}` 或 `${weather}` 占位符控制注入位置。
 
@@ -504,6 +521,7 @@ http://localhost:3000/test-bark
 ```env
 ALLOW_PUBLIC_API=true
 GATEWAY_API_KEY=请改成随机长密码
+TIME_ZONE=Asia/Shanghai
 ```
 
 默认值是 `false`，用于保护本机/局域网部署：非管理路由只允许本机和局域网访问。云端不打开这个开关时，Kelivo 请求 `/v1/chat/completions` 可能会收到 `403 Forbidden`。打开后，公网 `/v1/...` 会要求请求头携带 Gateway API Key。
@@ -512,10 +530,18 @@ Kelivo 里这样填：
 
 - Base URL：你的 Gateway 地址，例如 `https://你的域名/v1`
 - API Key：填写 `GATEWAY_API_KEY`
+- 不要把上游模型的 API Key（例如 Gemini 格式的 `AQ...` key）填到这里。
+- 删除 Kelivo 高级设置里遗留的 `Authorization` 自定义请求头；正常只需要在 API Key 输入框填写一次 Gateway key。
 
 `TARGET_API_KEY` 是服务器访问上游模型用的密钥，不要填到 Kelivo 里，也不要发给别人。
 
 注意：`ALLOW_PUBLIC_API=true` 只开放 `/v1/...` 模型接口；`/internal/...` 仍然保持内部接口，不会被这个开关放到公网。
+
+如果已经把 Gateway key 填进 API Key 输入框，聊天请求已能成功进入 `llm_forward_summary`，但日志仍偶尔出现一次 `401 Gateway API Key 无效或缺失`：
+
+1. 先看日志中的 `gateway_auth_rejected`，确认是哪条路径触发（常见是模型列表探测或旧预设请求）。
+2. 删除 Kelivo 中旧的同类 API 配置和高级 `Authorization` Header，保存后完全退出并重新打开 Kelivo。
+3. 不要同时依赖“API Key 输入框”和手工 `Authorization` Header。HTTP 请求只能有一个有效的 Authorization 值，重复配置可能让某些请求继续携带旧 key。
 
 **推荐使用 pm2 管理进程**（全平台兼容）：
 
