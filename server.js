@@ -502,8 +502,11 @@ app.addHook("onRequest", (req, reply, done) => {
   if (readBooleanEnv("ALLOW_PUBLIC_API", false) && req.url.startsWith("/v1/")) {
     const configuredKey = readEnvValue("GATEWAY_API_KEY");
 
-    console.log("Authorization:", req.headers.authorization);
-    console.log("Configured Key:", configuredKey);
+    console.log("Auth exists:", !!req.headers.authorization);
+    console.log("Auth prefix:", String(req.headers.authorization || "").slice(0, 20));
+    console.log("X-Gateway-Key exists:", !!req.headers["x-gateway-api-key"]);
+    console.log("X-API-Key exists:", !!req.headers["x-api-key"]);
+    console.log("Configured length:", configuredKey.length);
     
     if (!configuredKey) {
       reply.code(401).send({ error: "公网 /v1 已开启，但 GATEWAY_API_KEY 未配置" });
