@@ -710,7 +710,7 @@ app.post("/v1/chat/completions", async (req, reply) => {
   "Content-Type": "application/json",
   "x-goog-api-key": process.env.TARGET_API_KEY
 },
-body: JSON.stringify({ ...body, messages: llmMessages });
+body: JSON.stringify({ ...body, messages: llmMessages })});
     
     console.log("Upstream status:", response.status); 
 
