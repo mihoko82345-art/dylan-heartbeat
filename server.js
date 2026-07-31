@@ -696,6 +696,10 @@ app.post("/v1/chat/completions", async (req, reply) => {
 
     // 请求模型
     const response = await fetch(TARGET_API_URL, {
+    console.log("Target URL:", TARGET_API_URL);
+    console.log("Model:", body.model); 
+    
+    const response = await fetch(TARGET_API_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -703,11 +707,13 @@ app.post("/v1/chat/completions", async (req, reply) => {
       },
       body: JSON.stringify({ ...body, messages: llmMessages })
     });
+    
+    console.log("Upstream status:", response.status);
 
     const upstreamContentType = response.headers.get("content-type") || "";
     const shouldStreamResponse = requestedStream || upstreamContentType.includes("text/event-stream");
 
-    // 批注 2026-07-11：Kelivo 关闭 stream 时需要收到普通 JSON；只在请求或上游确认为 SSE 时才按流式直通。
+    // 批注 2026-07-11o po：Kelivo 关闭 stream 时需要收到普通 JSON；只在请求或上游确认为 SSE 时才按流式直通。
     if (!shouldStreamResponse) {
       const responseText = await response.text();
       return reply
