@@ -551,6 +551,12 @@ app.get("/v1/models", async (req, reply) => {
 // ========================
 // Chat Completions
 // ========================
+app.get("/test", async (req, reply) => {
+
+  reply.send("Hello Test!");
+
+});
+
 app.post("/v1/chat/completions", async (req, reply) => {
   try {
     const body = req.body;
