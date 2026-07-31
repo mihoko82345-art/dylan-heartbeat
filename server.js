@@ -698,6 +698,11 @@ app.post("/v1/chat/completions", async (req, reply) => {
     console.log("Target URL:", TARGET_API_URL);
     console.log("Model:", body.model); 
     
+    console.log(
+  "Key prefix:",
+  process.env.TARGET_API_KEY?.slice(0, 8)
+);
+
     const response = await fetch(TARGET_API_URL, {
       
       method: "POST",
