@@ -695,7 +695,6 @@ app.post("/v1/chat/completions", async (req, reply) => {
     const requestedStream = body?.stream === true;
 
     // 请求模型
-    const response = await fetch(TARGET_API_URL, {
     console.log("Target URL:", TARGET_API_URL);
     console.log("Model:", body.model); 
     
