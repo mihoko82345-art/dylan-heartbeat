@@ -701,7 +701,6 @@ app.post("/v1/chat/completions", async (req, reply) => {
     
     const response = await fetch(TARGET_API_URL, {
       
-    console.log("Upstream status:", response.status); 
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -710,6 +709,8 @@ app.post("/v1/chat/completions", async (req, reply) => {
       body: JSON.stringify({ ...body, messages: llmMessages })
     });
     
+    console.log("Upstream status:", response.status); 
+
     const upstreamContentType = response.headers.get("content-type") || "";
     const shouldStreamResponse = requestedStream || upstreamContentType.includes("text/event-stream");
 
