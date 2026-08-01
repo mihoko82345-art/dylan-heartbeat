@@ -722,7 +722,7 @@ app.post("/v1/chat/completions", async (req, reply) => {
   messages: llmMessages
 }, null, 2));
 
-    const requestBody = {
+     let requestBody = {
   ...body,
   messages: llmMessages
 };
