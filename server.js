@@ -729,6 +729,10 @@ app.post("/v1/chat/completions", async (req, reply) => {
 
      if (isGemini) {
       console.log("Gemini mode enabled");
+
+      requestBody = {
+    model: body.model
+  };
 }
 
     const response = await fetch(TARGET_API_URL, {
