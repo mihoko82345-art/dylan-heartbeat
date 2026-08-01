@@ -748,6 +748,11 @@ app.post("/v1/chat/completions", async (req, reply) => {
         }
       
       }
+
+      console.log(
+        "Gemini contents:",
+        JSON.stringify(geminiContents, null, 2)
+      );
     }
 
     const response = await fetch(TARGET_API_URL, {
