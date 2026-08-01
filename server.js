@@ -734,7 +734,7 @@ app.post("/v1/chat/completions", async (req, reply) => {
   "Content-Type": "application/json",
   Authorization: `Bearer ${process.env.TARGET_API_KEY}`
 },
-body: JSON.stringify({ ...body, messages: llmMessages })});
+body: JSON.stringify(requestBody)});
     
     console.log("Upstream status:", response.status); 
 
