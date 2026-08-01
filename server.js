@@ -734,6 +734,19 @@ app.post("/v1/chat/completions", async (req, reply) => {
 
       for (const msg of llmMessages) {
 
+        if (msg.role === "user") {
+          geminiContents.push({
+            role: "user",
+            parts: [
+              {
+                text: typeof msg.content === "string"
+                  ? msg.content
+                  : JSON.stringify(msg.content)
+              }
+            ]
+          });
+        }
+      
       }
     }
 
