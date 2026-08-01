@@ -731,7 +731,11 @@ app.post("/v1/chat/completions", async (req, reply) => {
       console.log("Gemini mode enabled");
 
       const geminiContents = [];
-}
+
+      for (const msg of llmMessages) {
+
+      }
+    }
 
     const response = await fetch(TARGET_API_URL, {
       
