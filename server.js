@@ -704,6 +704,9 @@ app.post("/v1/chat/completions", async (req, reply) => {
 
     const requestedStream = body?.stream === true;
 
+    const isGemini =
+      TARGET_API_URL.includes("generativelanguage.googleapis.com");
+
     // 请求模型
     console.log("Target URL:", TARGET_API_URL);
     console.log("Model:", body.model); 
