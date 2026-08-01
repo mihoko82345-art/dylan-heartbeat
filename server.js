@@ -728,7 +728,7 @@ app.post("/v1/chat/completions", async (req, reply) => {
 };
 
      if (isGemini) {
-
+      requestBody = {};
 }
 
     const response = await fetch(TARGET_API_URL, {
