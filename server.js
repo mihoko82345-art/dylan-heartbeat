@@ -713,6 +713,12 @@ app.post("/v1/chat/completions", async (req, reply) => {
   process.env.TARGET_API_KEY?.slice(0, 8)
 );
 
+    console.log("Request Body:");
+    console.log(JSON.stringify({
+  ...body,
+  messages: llmMessages
+}, null, 2));
+
     const response = await fetch(TARGET_API_URL, {
       
       method: "POST",
