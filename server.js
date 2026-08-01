@@ -17,6 +17,10 @@ function readBodyLimitBytes() {
   return Math.floor(mb * 1024 * 1024);
 }
 
+function convertOpenAIToGemini(messages) {
+  return messages;
+}
+
 const app = Fastify({
   logger: true,
   bodyLimit: readBodyLimitBytes()
