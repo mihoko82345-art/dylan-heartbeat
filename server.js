@@ -722,6 +722,11 @@ app.post("/v1/chat/completions", async (req, reply) => {
   messages: llmMessages
 }, null, 2));
 
+    const requestBody = {
+  ...body,
+  messages: llmMessages
+};
+
     const response = await fetch(TARGET_API_URL, {
       
       method: "POST",
