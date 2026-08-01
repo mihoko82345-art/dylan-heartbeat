@@ -727,6 +727,10 @@ app.post("/v1/chat/completions", async (req, reply) => {
   messages: llmMessages
 };
 
+     if (isGemini) {
+
+}
+
     const response = await fetch(TARGET_API_URL, {
       
       method: "POST",
