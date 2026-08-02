@@ -759,7 +759,16 @@ app.post("/v1/chat/completions", async (req, reply) => {
         contents: geminiContents
       };
     }
-
+      console.log("=== Request Info ===");
+      console.log("URL:", TARGET_API_URL);
+      console.log("Headers:");
+      console.log({
+        "Content-Type": "application/json",
+        "x-goog-api-key": process.env.TARGET_API_KEY?.slice(0, 8)
+      });
+      console.log("RequestBody:");
+      console.log(JSON.stringify(requestBody, null, 2));
+      
     const response = await fetch(TARGET_API_URL, {
       
       method: "POST",
