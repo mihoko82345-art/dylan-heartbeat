@@ -753,6 +753,11 @@ app.post("/v1/chat/completions", async (req, reply) => {
         "Gemini contents:",
         JSON.stringify(geminiContents, null, 2)
       );
+   
+      requestBody = {
+        model: body.model,
+        contents: geminiContents
+      };
     }
 
     const response = await fetch(TARGET_API_URL, {
