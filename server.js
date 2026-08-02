@@ -771,6 +771,11 @@ body: JSON.stringify(requestBody)});
     
     console.log("Upstream status:", response.status); 
 
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.log("Upstream response:");
+      console.log(errorText);
+    }
     const upstreamContentType = response.headers.get("content-type") || "";
     const shouldStreamResponse = requestedStream || upstreamContentType.includes("text/event-stream");
 
