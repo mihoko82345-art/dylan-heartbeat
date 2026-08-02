@@ -755,7 +755,6 @@ app.post("/v1/chat/completions", async (req, reply) => {
       );
    
       requestBody = {
-        model: body.model,
         contents: geminiContents
       };
     }
