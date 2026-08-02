@@ -764,9 +764,9 @@ app.post("/v1/chat/completions", async (req, reply) => {
       
       method: "POST",
       headers: {
-  "Content-Type": "application/json",
-  Authorization: `Bearer ${process.env.TARGET_API_KEY}`
-},
+        "Content-Type": "application/json",
+        "x-goog-api-key": process.env.TARGET_API_KEY
+      },
 body: JSON.stringify(requestBody)});
     
     console.log("Upstream status:", response.status); 
