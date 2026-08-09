@@ -772,6 +772,11 @@ app.post("/v1/chat/completions", async (req, reply) => {
       console.log("RequestBody:");
       console.log(JSON.stringify(requestBody, null, 2));
       
+      console.log(
+        "TARGET_API_KEY 已加载：",
+        Boolean(process.env.TARGET_API_KEY)
+      );
+
     const response = await fetch(TARGET_API_URL, {
       
       method: "POST",
