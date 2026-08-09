@@ -777,6 +777,16 @@ app.post("/v1/chat/completions", async (req, reply) => {
         Boolean(process.env.TARGET_API_KEY)
       );
 
+      console.log(
+        "TARGET_API_KEY 前几位：",
+        process.env.TARGET_API_KEY?.slice(0, 6)
+      );
+
+      console.log(
+        "Authorization 是否生成：",
+        `Bearer ${process.env.TARGET_API_KEY}`.startsWith("Bearer ")
+      );
+
     const response = await fetch(TARGET_API_URL, {
       
       method: "POST",
