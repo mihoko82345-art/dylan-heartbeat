@@ -26,6 +26,10 @@ const app = Fastify({
   bodyLimit: readBodyLimitBytes()
 });
 
+app.register(require("@fastify/cors"), {
+  origin: true
+});
+
 app.register(require("@fastify/formbody"));
 
 const PORT = Number(process.env.PORT) || 3000;
