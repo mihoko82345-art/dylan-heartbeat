@@ -793,6 +793,28 @@ app.post("/v1/chat/completions", async (req, reply) => {
         `Bearer ${process.env.TARGET_API_KEY}`.length
       );
 
+      console.log(
+        "KEY 原始长度：",
+        process.env.TARGET_API_KEY.length
+      );
+
+      console.log(
+        "KEY 去空格后长度：",
+        process.env.TARGET_API_KEY.trim().length
+      );
+
+      console.log(
+        "KEY 是否包含换行：",
+        /[\r\n]/.test(process.env.TARGET_API_KEY)
+      );
+
+      console.log(
+        "KEY 是否自己已经带 Bearer：",
+        process.env.TARGET_API_KEY.trim().startsWith("Bearer ")
+      );
+      
+    const targetApiKey = process.env.TARGET_API_KEY.trim();
+
     const response = await fetch(TARGET_API_URL, {
       
       method: "POST",
