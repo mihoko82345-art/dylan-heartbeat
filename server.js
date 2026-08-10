@@ -817,7 +817,7 @@ app.post("/v1/chat/completions", async (req, reply) => {
 
     const headers = {
       "Content-Type": "application/json",
-      "Authorization": `Bearer ${targetApiKey}`
+      "x-goog-api-key": `Bearer ${targetApiKey}`
     };
 
     console.log("准备发送请求头：", Object.keys(headers))
