@@ -815,6 +815,13 @@ app.post("/v1/chat/completions", async (req, reply) => {
       
     const targetApiKey = process.env.TARGET_API_KEY.trim();
 
+    const headers = {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${targetApiKey}`
+    };
+
+    console.log("准备发送请求头：", Object.keys(headers))
+
     const response = await fetch(TARGET_API_URL, {
       
       method: "POST",
