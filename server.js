@@ -827,9 +827,9 @@ app.post("/v1/chat/completions", async (req, reply) => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-goog-api-key": process.env.TARGET_API_KEY
+        "Authorization": "Bearer " + process.env.TARGET_API_KEY?.slice(0, 8) + "..."
       },
-body: JSON.stringify(requestBody)});
+      body: JSON.stringify(requestBody)});
     
     console.log("Upstream status:", response.status); 
 
@@ -837,9 +837,12 @@ body: JSON.stringify(requestBody)});
       const errorText = await response.text();
       console.log("Upstream response:");
       console.log(errorText);
+    
+      return reply
+        .code(response.status)
+        .header("Content-Type", "application/json")
+        .send(errorText);
     }
-    const upstreamContentType = response.headers.get("content-type") || "";
-    const shouldStreamResponse = requestedStream || upstreamContentType.includes("text/event-stream");
 
     // 批注 2026-07-11o po：Kelivo 关闭 stream 时需要收到普通 JSON；只在请求或上游确认为 SSE 时才按流式直通。
     if (!shouldStreamResponse) {
