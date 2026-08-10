@@ -787,6 +787,12 @@ app.post("/v1/chat/completions", async (req, reply) => {
         `Bearer ${process.env.TARGET_API_KEY}`.startsWith("Bearer ")
       );
 
+      console.log("请求上游：", TARGET_API_URL);
+      console.log(
+        "Authorization 长度：",
+        `Bearer ${process.env.TARGET_API_KEY}`.length
+      );
+
     const response = await fetch(TARGET_API_URL, {
       
       method: "POST",
